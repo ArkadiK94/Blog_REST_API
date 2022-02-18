@@ -137,4 +137,32 @@ exports.deletePost = (req, res, next)=>{
     .catch(err => errorHandle.asyncError(err, next));
 }
 
+exports.getStatus = (req, res, next)=>{
+  User.findById(req.userId)
+    .then(user=>{
+      if(!user){
+        errorHandle.syncError("User not found", 404);
+      }
+      res.status(200).json({message:"The status was fetched", status:user.status});
+    })
+    .catch(err => errorHandle.asyncError(err, next));
+}
+
+exports.postStatus = (req, res, next)=>{
+  const status = req.body.status;
+  User.findById(req.userId)
+    .then(user=>{
+      if(!user){
+        errorHandle.syncError("User not found", 404);
+      }
+      user.status = status;
+      return user.save();
+    })
+    .then(()=>{
+      res.status(200).json({message:"The status was updeted"});
+    })
+    .catch(err => errorHandle.asyncError(err, next));
+
+}
+
 

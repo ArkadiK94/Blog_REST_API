@@ -29,7 +29,7 @@ exports.postSignup = (req, res, next)=>{
       return user.save();
     })
     .then(() =>{
-      res.status(201).json({massage: "The User was created"})
+      res.status(201).json({message: "The User was created"})
     })
     .catch(err =>{
       errorHandle.asyncError(err,next);

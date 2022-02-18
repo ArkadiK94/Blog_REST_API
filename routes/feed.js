@@ -26,9 +26,10 @@ router.put("/post/:postId",Auth,
   , feedControllers.editPost
 );
 
-router.delete("/post/:postId",Auth, feedControllers.deletePost);
+router.delete("/post/:postId", Auth, feedControllers.deletePost);
 
+router.get("/status", Auth, feedControllers.getStatus);
 
-
+router.put("/status", Auth, feedControllers.postStatus);
 
 module.exports = router;
