@@ -41,7 +41,7 @@ exports.getPost = (req, res, next)=>{
   const postId = req.params.postId;
   Post.findById(postId)
     .then(post =>{
-      if(post._id.toString() !== postId.toString()){
+      if(!post){
         errorHandle.syncError("Post not found", 404);
       }
       res.status(200).json({message: "The post was fetched", post:post})
@@ -71,7 +71,7 @@ exports.editPost = (req, res, next)=>{
   let newPost;
   Post.findById(postId)
     .then(post=>{
-      if(post._id.toString() !== postId.toString()){
+      if(!post){
         errorHandle.syncError("Post not found", 404);
       }
       post.title = title;
@@ -93,7 +93,7 @@ exports.deletePost = (req, res, next)=>{
   const postId = req.params.postId;
   Post.findById(postId)
     .then((post)=>{
-      if(post._id.toString() !== postId.toString()){
+      if(!post){
         errorHandle.syncError("Post not found", 404);
       }
       if(post.imageUrl){
@@ -106,3 +106,5 @@ exports.deletePost = (req, res, next)=>{
     })
     .catch(err => errorHandle.asyncError(err, next, 500));
 }
+
+

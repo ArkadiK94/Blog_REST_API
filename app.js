@@ -7,6 +7,7 @@ const multer = require("multer");
 const mongoose = require("mongoose");
 
 const feedRoutes = require("./routes/feed");
+const authRoutes = require("./routes/auth");
 const errorHandle = require("./util/error");
 
 const app = express();
@@ -41,6 +42,7 @@ app.use((req, res, next)=>{
 });
 
 app.use("/feed", feedRoutes);
+app.use("/auth", authRoutes);
 
 app.use((req,res,next)=>{
   errorHandle.syncError("Page Not Found", 404);
