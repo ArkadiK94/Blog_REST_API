@@ -8,15 +8,22 @@ const errorHandle = require("../util/error");
 
 exports.postSignup = (req, res, next)=>{
   const err = validationResult(req);
-  const email = req.body.email;
-  const password= req.body.password;
-  const name = req.body.name;
   if(!err.isEmpty()){
     const errMsg = new Error("Validation failed");
     errMsg.data = err.array();
     return errorHandle.syncError(errMsg, 422);
   }
-  bcrypt.hash(password, 12)
+  const email = req.body.email;
+  const password= req.body.password;
+  const name = req.body.name;
+  User.findOne({email:email})
+    .then(user=>{
+      if(user){
+        errorHandle.syncError("This user is already exists", 403);
+      }
+      return bcrypt.hash(password, 12);
+
+    })
     .then(hasedPassword =>{
       const user = new User({email: email, name: name, password: hasedPassword});
       return user.save();

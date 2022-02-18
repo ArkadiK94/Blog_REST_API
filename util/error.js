@@ -6,7 +6,6 @@ exports.asyncError = (err,next,statusCode=500) => {
   if(!err.httpStatusCode){
     newError.httpStatusCode = statusCode;
   }
-  newError.httpStatusCode = statusCode;
   next(newError);
 }
 

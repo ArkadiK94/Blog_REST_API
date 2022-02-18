@@ -1,6 +1,7 @@
 const {validationResult} = require("express-validator");
 
 const Post = require("../model/post"); 
+const User = require("../model/user");
 const errorHandle = require("../util/error");
 const fileHelper = require("../util/file"); 
 
@@ -21,17 +22,30 @@ exports.getPosts = (req, res, next)=>{
 }
 
 exports.createPost = (req, res, next)=>{
-  const title = req.body.title;
-  const content = req.body.content;
-  const imageUrl = req.file.path.replace(/\\/,"/");
-  const post = new Post({title: title, content: content, imageUrl: imageUrl, creator:{name:"Arkadi K"}});
   const error = validationResult(req);
   if(!error.isEmpty()){
     const errMsg = new Error("Validation failed");
     errMsg.data = error.array();
     return errorHandle.syncError(errMsg, 422);
   }
-  post.save()
+  const title = req.body.title;
+  const content = req.body.content;
+  const imageUrl = req.file.path.replace(/\\/,"/");
+  let user;
+  let post;
+  User.findById(req.userId)
+    .then(userFound=>{
+      user = userFound;
+      if(!user){
+        errorHandle.syncError("User not found", 404);
+      }
+      post = new Post({title: title, content: content, imageUrl: imageUrl, creator:{name:user.name, id: user}});
+      return post.save();
+    })
+    .then((thePost)=>{
+      user.posts.push(thePost._id);
+      return user.save();
+    })
     .then(()=>{
       res.status(201).json({message: "New post was created", post:post});
     })
@@ -55,6 +69,12 @@ exports.getPost = (req, res, next)=>{
 }
 
 exports.editPost = (req, res, next)=>{
+  const error = validationResult(req);
+  if(!error.isEmpty()){
+    const errMsg = new Error("Validation failed");
+    errMsg.data = error.array();
+    return errorHandle.syncError(errMsg, 422);
+  }
   const title = req.body.title;
   const content = req.body.content;
   const image = req.file;
@@ -63,17 +83,14 @@ exports.editPost = (req, res, next)=>{
     imageUrl = req.file.path.replace(/\\/,"/");
   }
   const postId = req.params.postId;
-  const error = validationResult(req);
-  if(!error.isEmpty()){
-    const errMsg = new Error("Validation failed");
-    errMsg.data = error.array();
-    return errorHandle.syncError(errMsg, 422);
-  }
   let newPost;
   Post.findById(postId)
     .then(post=>{
       if(!post){
         errorHandle.syncError("Post not found", 404);
+      }
+      if(post.creator.id.toString() !== req.userId.toString()){
+        errorHandle.syncError("Forbidden", 403);
       }
       post.title = title;
       post.content = content;
@@ -99,10 +116,20 @@ exports.deletePost = (req, res, next)=>{
       if(!post){
         errorHandle.syncError("Post not found", 404);
       }
+      if(post.creator.id.toString() !== req.userId.toString()){
+        errorHandle.syncError("Forbidden", 403);
+      }
       if(post.imageUrl){
         fileHelper.deleteFile(post.imageUrl);
       }
       return post.remove();
+    })
+    .then(()=>{
+      return User.findById(req.userId);
+    })
+    .then((user)=>{
+      user.posts.pull(postId);
+      return user.save();
     })
     .then(()=>{
       res.status(200).json({message: "The post was deleted"});
