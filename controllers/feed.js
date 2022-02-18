@@ -17,7 +17,7 @@ exports.getPosts = (req, res, next)=>{
     .then(posts =>{
       res.status(200).json({message: "All posts were fetched", posts: posts, totalItems: totalItems});
     })
-    .catch(err => errorHandle.asyncError(err, next, 500));
+    .catch(err => errorHandle.asyncError(err, next));
 }
 
 exports.createPost = (req, res, next)=>{
@@ -27,14 +27,17 @@ exports.createPost = (req, res, next)=>{
   const post = new Post({title: title, content: content, imageUrl: imageUrl, creator:{name:"Arkadi K"}});
   const error = validationResult(req);
   if(!error.isEmpty()){
-    const errMsg = error.array()[0].msg;
+    const errMsg = new Error("Validation failed");
+    errMsg.data = error.array();
     return errorHandle.syncError(errMsg, 422);
   }
   post.save()
     .then(()=>{
       res.status(201).json({message: "New post was created", post:post});
     })
-    .catch(err => errorHandle.asyncError(err, next, 500));
+    .catch(err => {
+      errorHandle.asyncError(err,next);
+    });
 }
 
 exports.getPost = (req, res, next)=>{
@@ -47,10 +50,7 @@ exports.getPost = (req, res, next)=>{
       res.status(200).json({message: "The post was fetched", post:post})
     })
     .catch(err=> {
-      if(!err.httpStatusCode){
-        err.httpStatusCode = 500;
-      }
-      errorHandle.asyncError(err, next, err.httpStatusCode);
+      errorHandle.asyncError(err, next);
     });
 }
 
@@ -65,7 +65,8 @@ exports.editPost = (req, res, next)=>{
   const postId = req.params.postId;
   const error = validationResult(req);
   if(!error.isEmpty()){
-    const errMsg = error.array()[0].msg;
+    const errMsg = new Error("Validation failed");
+    errMsg.data = error.array();
     return errorHandle.syncError(errMsg, 422);
   }
   let newPost;
@@ -86,7 +87,9 @@ exports.editPost = (req, res, next)=>{
     .then(()=>{
       res.status(200).json({message: "The post was updated", post:newPost});
     })
-    .catch(err => errorHandle.asyncError(err, next, 500));
+    .catch(err => {
+      errorHandle.asyncError(err,next);
+    });
 }
 
 exports.deletePost = (req, res, next)=>{
@@ -104,7 +107,7 @@ exports.deletePost = (req, res, next)=>{
     .then(()=>{
       res.status(200).json({message: "The post was deleted"});
     })
-    .catch(err => errorHandle.asyncError(err, next, 500));
+    .catch(err => errorHandle.asyncError(err, next));
 }
 
 

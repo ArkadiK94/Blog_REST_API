@@ -5,7 +5,7 @@ const errorHandle = require("./error");
 exports.deleteFile = (filePath)=>{
   fs.unlink(filePath,(err)=>{
     if(err){
-      errorHandle.syncError(err,500);
+      errorHandle.syncError(err);
     }
   });
 }

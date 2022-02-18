@@ -53,7 +53,7 @@ app.use((err, req, res, next)=>{
   if(!statusCode){
     statusCode = 500;  
   }
-  res.status(statusCode).json({message:`${err} have occurred`});
+  res.status(statusCode).json({message:`${err}`, err:err});
 });
 
 mongoose.connect(process.env.MONGODB_URI)
@@ -61,5 +61,5 @@ mongoose.connect(process.env.MONGODB_URI)
     app.listen(8080);
   })
   .catch(err =>{
-    errorHandle.syncError(err,500);
+    errorHandle.syncError(err);
   });
