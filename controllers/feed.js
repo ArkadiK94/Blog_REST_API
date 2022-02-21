@@ -10,9 +10,8 @@ exports.getPosts = async (req, res, next)=>{
   const POSTS_PER_PAGE = 2;
   try{
     const totalItems = await Post.find().countDocuments();
-    const posts = await Post.find().skip((page-1)*POSTS_PER_PAGE).limit(POSTS_PER_PAGE);
-    
-    res.status(200).json({message: "All posts were fetched", posts: posts, totalItems: totalItems});
+    const posts = await Post.find().skip((page-1)*POSTS_PER_PAGE).limit(POSTS_PER_PAGE).populate("creator","name");
+    res.status(200).json({message: "All posts were fetched", posts: posts, totalItems: totalItems, });
 
   }catch(err){
     errorHandle.asyncError(err, next);
@@ -35,7 +34,7 @@ exports.createPost = async (req, res, next)=>{
     if(!user){
       errorHandle.syncError("User not found", 404);
     }
-    post = new Post({title: title, content: content, imageUrl: imageUrl, creator:{name:user.name, id: user}});
+    post = new Post({title: title, content: content, imageUrl: imageUrl, creator:user});
     await post.save();
     user.posts.push(post._id);
     await user.save();
@@ -81,7 +80,7 @@ exports.editPost = async (req, res, next)=>{
     if(!post){
       errorHandle.syncError("Post not found", 404);
     }
-    if(post.creator.id.toString() !== req.userId.toString()){
+    if(post.creator.toString() !== req.userId.toString()){
       errorHandle.syncError("Forbidden", 403);
     }
     post.title = title;
@@ -104,7 +103,7 @@ exports.deletePost = async (req, res, next)=>{
     if(!post){
       errorHandle.syncError("Post not found", 404);
     }
-    if(post.creator.id.toString() !== req.userId.toString()){
+    if(post.creator.toString() !== req.userId.toString()){
       errorHandle.syncError("Forbidden", 403);
     }
     if(post.imageUrl){

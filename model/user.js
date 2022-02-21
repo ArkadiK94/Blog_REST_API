@@ -23,7 +23,7 @@ const userSchema = new Schema({
   ],
   status:{
     type: String,
-    default: "Offline"
+    default: "I am new here"
   }
 });
 
