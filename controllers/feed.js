@@ -4,13 +4,14 @@ const Post = require("../model/post");
 const User = require("../model/user");
 const errorHandle = require("../util/error");
 const fileHelper = require("../util/file"); 
+const io = require("../socket");
 
 exports.getPosts = async (req, res, next)=>{
   const page = req.query.page;
   const POSTS_PER_PAGE = 2;
   try{
     const totalItems = await Post.find().countDocuments();
-    const posts = await Post.find().skip((page-1)*POSTS_PER_PAGE).limit(POSTS_PER_PAGE).populate("creator","name");
+    const posts = await Post.find().sort({createdAt:-1}).skip((page-1)*POSTS_PER_PAGE).limit(POSTS_PER_PAGE).populate("creator","name");
     res.status(200).json({message: "All posts were fetched", posts: posts, totalItems: totalItems, });
 
   }catch(err){
@@ -38,6 +39,8 @@ exports.createPost = async (req, res, next)=>{
     await post.save();
     user.posts.push(post._id);
     await user.save();
+
+    io.getIo().emit("posts",{action:"create", post:post});
     res.status(201).json({message: "New post was created", post:post});
 
   }catch(err){
@@ -90,6 +93,7 @@ exports.editPost = async (req, res, next)=>{
       post.imageUrl = imageUrl;
     }
     await post.save();
+    io.getIo().emit("posts",{action:"edit"});
     res.status(200).json({message: "The post was updated", post:post});
   }catch(err){
     errorHandle.asyncError(err,next);
@@ -113,6 +117,7 @@ exports.deletePost = async (req, res, next)=>{
     const user = await User.findById(req.userId);
     user.posts.pull(postId);
     await user.save();
+    io.getIo().emit("posts",{action:"delete", postId:postId});
     res.status(200).json({message: "The post was deleted"});
   }catch(err){
     errorHandle.asyncError(err, next)
