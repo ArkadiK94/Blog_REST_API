@@ -17,4 +17,4 @@ Important features from NodeJS and other used libraries:
 3. Handling Cross Origin Resource Sharing Errors
 
 
-* connecting the rest api with react frontend app and managing there the connection (the frontend was not added to github)
+* Using the API with Blog app which was build with ReactJS (the frontend was not added to github)
