@@ -15,3 +15,6 @@ Important features from NodeJS and other used libraries:
 1. Handling Requsts & Respones with sending JSON DATA 
 2. Authentication with jwt
 3. Handling Cross Origin Resource Sharing Errors
+
+
+* connecting the rest api with react frontend app and managing there the connection (the frontend was not added to github)
