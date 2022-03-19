@@ -5,6 +5,10 @@ const path = require("path");
 const express = require("express");
 const multer = require("multer");
 const mongoose = require("mongoose");
+const helmet= require("helmet");
+const compression = require("compression");
+const aws = require("aws-sdk");
+const multerS3 = require("multer-s3");
 
 const feedRoutes = require("./routes/feed");
 const authRoutes = require("./routes/auth");
@@ -12,34 +16,39 @@ const errorHandle = require("./util/error");
 
 const app = express();
 
-const fileStroage = multer.diskStorage({
-  destination: (req, file, cb)=>{
-    cb(null, "images");
-  },
-  filename: (req,file,cb)=>{
-    const date = new Date().toISOString().replace(/:/g,".");
+aws.config.update({
+  secretAccessKey: process.env.ACCESS_SECRET,
+  accessKeyId: process.env.ACCESS_KEY,
+  region: process.env.REGION
+});
+const s3 = new aws.S3();
+const upload = multer({
+  storage:multerS3({
+    bucket: process.env.BUCKET,
+    s3: s3,
+    acl:"public-read",
+    key:(req,file,cb)=>{
+      const date = new Date().toISOString().replace(/:/g,".");
     cb(null, `${date}-${file.originalname}`);
-  }
+    }
+  })
 });
 
-const fileFilter = (req,file,cb)=>{
-  if(file.mimetype === 'image/png' || file.mimetype === "image/jpg" || file.mimetype === "image/jpeg"){
-    cb(null, true);
-  } else {
-    cb(null, false);
-  }
-}
-
 app.use(express.json());
-app.use(multer({storage: fileStroage, fileFilter: fileFilter}).single("image"));
-app.use("/images", express.static(path.join(__dirname,"images")));
-
+app.use(upload.single("image"));
 app.use((req, res, next)=>{
   res.setHeader("Access-Control-Allow-Origin","*");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  req.s3 = s3;
   next();
 });
+app.use(helmet({
+  frameguard:{
+    action: "deny"
+  }
+}));
+app.use(compression());
 
 app.use("/feed", feedRoutes);
 app.use("/auth", authRoutes);
@@ -58,7 +67,7 @@ app.use((err, req, res, next)=>{
 
 mongoose.connect(process.env.MONGODB_URI)
   .then(()=>{
-    const server = app.listen(8080);
+    const server = app.listen(process.env.PORT || 8080);
     const io = require("./socket").init(server);
     io.on("connection",()=>{
       console.log("Client connected");

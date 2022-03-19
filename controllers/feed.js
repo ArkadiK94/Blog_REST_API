@@ -28,7 +28,7 @@ exports.createPost = async (req, res, next)=>{
   }
   const title = req.body.title;
   const content = req.body.content;
-  const imageUrl = req.file.path.replace(/\\/,"/");
+  const imageUrl = req.file.location;
   let post;
   try{
     const user = await User.findById(req.userId);
@@ -74,7 +74,7 @@ exports.editPost = async (req, res, next)=>{
   const image = req.file;
   let imageUrl = undefined;
   if(image){
-    imageUrl = req.file.path.replace(/\\/,"/");
+    imageUrl = req.file.location;
   }
   const postId = req.params.postId;
 
@@ -89,7 +89,7 @@ exports.editPost = async (req, res, next)=>{
     post.title = title;
     post.content = content;
     if(imageUrl){
-      fileHelper.deleteFile(post.imageUrl);
+      fileHelper.deleteFile(post.imageUrl, req.s3);
       post.imageUrl = imageUrl;
     }
     await post.save();
@@ -111,7 +111,7 @@ exports.deletePost = async (req, res, next)=>{
       errorHandle.syncError("Forbidden", 403);
     }
     if(post.imageUrl){
-      fileHelper.deleteFile(post.imageUrl);
+      fileHelper.deleteFile(post.imageUrl,req.s3);
     }
     await post.remove();
     const user = await User.findById(req.userId);
