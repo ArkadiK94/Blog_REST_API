@@ -1,4 +1,4 @@
-exports.asyncError = (err,next,statusCode=500) => {
+const errorGeneral = (err,statusCode)=>{
   let newError = err;
   if(!(newError instanceof Error)){
     newError = new Error(err);
@@ -6,16 +6,21 @@ exports.asyncError = (err,next,statusCode=500) => {
   if(!err.httpStatusCode){
     newError.httpStatusCode = statusCode;
   }
-  next(newError);
+  return newError;
+}
+
+exports.asyncError = (err,next,statusCode=500) => {
+  const newError = errorGeneral(err,statusCode);
+  if(!next(newError)){ // for testing cases
+    throw newError;
+  } else {
+    next(newError);
+    return newError; // for testing cases
+  }
 }
 
 exports.syncError = (err,statusCode=500) => {
-  let newError = err;
-  if(!(newError instanceof Error)){
-    newError = new Error(err);
-  }
-  if(!err.httpStatusCode){
-    newError.httpStatusCode = statusCode;
-  }
+  const newError = errorGeneral(err,statusCode);
   throw newError;
 }
+

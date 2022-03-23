@@ -10,14 +10,16 @@ module.exports = (req, res, next)=>{
   const token = authHeader.split(" ")[1];
   let decodedToken;
   try{
-    decodedToken = jwt.verify(token,`${process.env.SECRET_FOR_TOKEN}`);
+    decodedToken = jwt.verify(token,process.env.SECRET_FOR_TOKEN);
+    if(!decodedToken){
+      errorHandle.syncError("Not Authorized",401);
+    }
+    req.userId = decodedToken.userId;
+    next();
+    return req; // for testing cases
   }
   catch(err){
-    errorHandle.syncError(err);
+    errorHandle.asyncError(err,next);
   }
-  if(!decodedToken){
-    errorHandle.syncError("Not Authorized",401);
-  }
-  req.userId = decodedToken.userId;
-  next();
+  
 }

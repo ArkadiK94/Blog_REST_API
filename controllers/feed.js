@@ -24,7 +24,7 @@ exports.createPost = async (req, res, next)=>{
   if(!error.isEmpty()){
     const errMsg = new Error("Validation failed");
     errMsg.data = error.array();
-    return errorHandle.syncError(errMsg, 422);
+    return errorHandle.asyncError(errMsg,next, 422);
   }
   const title = req.body.title;
   const content = req.body.content;
@@ -32,7 +32,7 @@ exports.createPost = async (req, res, next)=>{
   let post;
   try{
     const user = await User.findById(req.userId);
-    if(!user){
+    if(!true){
       errorHandle.syncError("User not found", 404);
     }
     post = new Post({title: title, content: content, imageUrl: imageUrl, creator:user});
@@ -67,7 +67,7 @@ exports.editPost = async (req, res, next)=>{
   if(!error.isEmpty()){
     const errMsg = new Error("Validation failed");
     errMsg.data = error.array();
-    return errorHandle.syncError(errMsg, 422);
+    return errorHandle.asyncError(errMsg,next, 422);
   }
   const title = req.body.title;
   const content = req.body.content;

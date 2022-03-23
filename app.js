@@ -63,6 +63,7 @@ app.use((err, req, res, next)=>{
     statusCode = 500;  
   }
   res.status(statusCode).json({message:`${err}`, err:err});
+  throw err;
 });
 
 mongoose.connect(process.env.MONGODB_URI)

@@ -11,7 +11,7 @@ exports.postSignup = async (req, res, next)=>{
   if(!err.isEmpty()){
     const errMsg = new Error("Validation failed");
     errMsg.data = err.array();
-    return errorHandle.syncError(errMsg, 422);
+    return errorHandle.asyncError(errMsg,next, 422);
   }
   const email = req.body.email;
   const password= req.body.password;
@@ -49,14 +49,14 @@ exports.postLogin = async (req, res, next)=>{
         email: email,
         userId: userId
       }, 
-      `${process.env.SECRET_FOR_TOKEN}`,
+        process.env.SECRET_FOR_TOKEN,
       {
         expiresIn: "1h"
       } 
     );
     res.status(200).json({token: token, userId: userId});
   }catch(err){
-    errorHandle.asyncError(err,next);
+    errorHandle.asyncError(err, next);
   }
 
 }
