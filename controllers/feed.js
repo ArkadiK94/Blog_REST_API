@@ -12,8 +12,8 @@ exports.getPosts = async (req, res, next)=>{
   try{
     const totalItems = await Post.find().countDocuments();
     const posts = await Post.find().sort({createdAt:-1}).skip((page-1)*POSTS_PER_PAGE).limit(POSTS_PER_PAGE).populate("creator","name");
-    res.status(200).json({message: "All posts were fetched", posts: posts, totalItems: totalItems, });
-
+    res.status(200).json({message: "All posts were fetched", posts: posts, totalItems: totalItems});
+    return {posts,POSTS_PER_PAGE}; // for testing
   }catch(err){
     errorHandle.asyncError(err, next);
   }

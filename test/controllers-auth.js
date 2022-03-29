@@ -169,7 +169,7 @@ describe("Controllers Auth",function(){
           done();
         });
     });
-    it("should check if the response data defined correctly",function(done){
+    it("should get the response with correctly defined data",function(done){
       req.body.email = "test@test.com";
       sinon.stub(bcrypt,"compare");
       bcrypt.compare.returns(true);
@@ -206,7 +206,7 @@ describe("Controllers Auth",function(){
           done();
         });
     });
-    it("should check if the response data defined correctly",function(done){
+    it("should get the response with correctly defined data",function(done){
       authController.getStatus(req,res,()=>{})
         .then(()=>{
           expect(res)
@@ -235,7 +235,7 @@ describe("Controllers Auth",function(){
           done();
         });
     });
-    it("should check if the response data defined correctly",function(done){
+    it("should get the response with correctly defined data ",function(done){
       authController.postStatus(req,res,()=>{})
         .then((updatedUser)=>{
           expect(res)
