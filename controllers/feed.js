@@ -32,17 +32,17 @@ exports.createPost = async (req, res, next)=>{
   let post;
   try{
     const user = await User.findById(req.userId);
-    if(!true){
+    if(!user){
       errorHandle.syncError("User not found", 404);
     }
     post = new Post({title: title, content: content, imageUrl: imageUrl, creator:user});
-    await post.save();
+    const savedPost = await post.save();
     user.posts.push(post._id);
-    await user.save();
+    const updatedUser = await user.save();
 
     io.getIo().emit("posts",{action:"create", post:post});
     res.status(201).json({message: "New post was created", post:post});
-
+    return {savedPost,updatedUser}; // for testing
   }catch(err){
     errorHandle.asyncError(err,next);
   }
@@ -55,10 +55,11 @@ exports.getPost = async (req, res, next)=>{
     if(!post){
       errorHandle.syncError("Post not found", 404);
     }
-    res.status(200).json({message: "The post was fetched", post:post})
+    res.status(200).json({message: "The post was fetched", post:post});
+    return post; // for testing
 
   }catch(err){
-      errorHandle.asyncError(err, next);
+    errorHandle.asyncError(err, next);
   }
 }
 

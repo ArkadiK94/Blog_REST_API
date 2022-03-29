@@ -3,10 +3,12 @@ require("dotenv").config();
 const expect = require("chai").expect;
 const proxyquire = require("proxyquire").noPreserveCache();
 const mongoose = require("mongoose");
+const sinon = require("sinon");
 
 const User = require("../model/user");
 const Post = require("../model/post"); 
 const feedControllers = require("../controllers/feed");
+const io = require("../socket");
 
 describe("Controllers Feed",function(){
   let req, res, user, post;
@@ -36,6 +38,9 @@ describe("Controllers Feed",function(){
         return user.save();
       })
       .then(()=>{
+        sinon.stub(io,"getIo").returns({
+          emit: sinon.stub().returns(true)
+        });
         done();
       })
       .catch(err =>{
@@ -45,10 +50,8 @@ describe("Controllers Feed",function(){
   beforeEach(function(){
     req = {
       body:{
-        email: "test2@test.com",
-        password: "xyz",
-        name: "test",
-        status: "Testing"
+        title: "Testing",
+        content: "test xyz",
       },
       file:{
         location: "/someUrl/post"
@@ -169,7 +172,7 @@ describe("Controllers Feed",function(){
       chackingStatus(feedControllerSeamed.editPost({},{},()=>{}),done);
     });
   });
-  describe("Controllers Feed - createPost and editPost", function(done){
+  describe("Controllers Feed - createPost and editPost", function(){
     let feedControllerSeamed;
     beforeEach(function(){
       feedControllerSeamed = proxyquire("../controllers/feed",{"express-validator":{
@@ -182,6 +185,65 @@ describe("Controllers Feed",function(){
         }
       }}); 
     }); 
+    describe("Controllers Feed - createPost", function(){
+      it("should throw an error if user not found",function(done){
+        req.userId = "9999aa99a9a99aa999a99a98";
+        feedControllerSeamed.createPost(req, {},()=>{})
+          .then(result=> {
+            expect(result)
+              .to.be.an("error")
+              .to.include({"message":"User not found","httpStatusCode":404});
+            done();
+          })
+          .catch(err => {
+            expect(err)
+              .to.be.an("error")
+              .to.include({"message":"User not found","httpStatusCode":404});
+            done();
+          });
+      });
+      it("should get the response with correctly defined data", function(done){
+        feedControllerSeamed.createPost(req, res, ()=>{})
+          .then(({savedPost,updatedUser})=>{
+            expect(res).to.include({"statusCode":201,"message":"New post was created","post":savedPost});
+            expect(savedPost).to.include({"title":req.body.title,"content": req.body.content, "imageUrl": req.file.location, "creator":updatedUser});
+            expect(updatedUser.posts[1].toString()).to.equal(savedPost._id.toString());
+            done();
+          })  
+          .catch(err => console.log(err));
+      });
+    });
+    describe("Controllers Feed - editPost", function(done){
+
+    });
+  });
+  describe("Controllers Feed - getPost", function(){
+    it("should throw an error if the post not found",function(){
+      req.params.postId = "8877aa99a9a99aa999a99a99";
+      feedControllers.getPost(req, {}, ()=>{})
+        .then(result=> {
+          expect(result)
+            .to.be.an("error")
+            .to.include({"message":"Post not found","httpStatusCode":404});
+          done();
+        })
+        .catch(err => {
+          expect(err)
+            .to.be.an("error")
+            .to.include({"message":"Post not found","httpStatusCode":404});
+          done();
+        });
+    });
+    it("should get the response with correctly defined data", function(done){
+      feedControllers.getPost(req, res, ()=>{})
+        .then(post=>{
+          expect(res).to.include({"statusCode":200,"message":"The post was fetched","post":post});
+          done();
+        })
+        .catch(err=>{
+          console.log(err);
+        });
+    });
   });
   after(function(done){
     User.deleteMany({})
@@ -192,6 +254,7 @@ describe("Controllers Feed",function(){
         return mongoose.disconnect();
       })
       .then(()=>{
+        io.getIo.restore();
         done();
       })
       .catch(err =>{
