@@ -9,6 +9,7 @@ const User = require("../model/user");
 const Post = require("../model/post"); 
 const feedControllers = require("../controllers/feed");
 const io = require("../socket");
+const shouldThrowError = require("./throw-error");
 
 describe("Controllers Feed",function(){
   let req, res, user, post;
@@ -83,18 +84,8 @@ describe("Controllers Feed",function(){
     }
   });
   describe("Controllers Feed - getPosts", function(){
-    it("should return an error in case there was one",function(done){
-      feedControllers.getPosts(req,{},()=>{})
-        .then(result=>{
-          expect(result)
-            .to.be.an("error");
-          done();
-        })
-        .catch(err =>{
-          expect(err)
-            .to.be.an("error");
-          done();
-        });
+    it("should throw an error in case there was one",function(done){
+      shouldThrowError(feedControllers.getPosts(req,{},()=>{}),done);
     });
     it("should get the response with correctly defined data",function(done){
       const post1 = new Post({
@@ -134,23 +125,6 @@ describe("Controllers Feed",function(){
     });
   });
   describe("Controllers Feed - Validation failed",function(){
-    let chackingStatus = (promise,done)=>{
-      promise
-        .then(result=> {
-          expect(result)
-            .to.be.an("error")
-            .to.include({"message":"Validation failed","httpStatusCode":422})
-            .to.have.property("data");
-          done();
-        })
-        .catch(err => {
-          expect(err)
-            .to.be.an("error")
-            .to.include({"message":"Validation failed","httpStatusCode":422})
-            .to.have.property("data");
-          done();
-        });
-    };
     before(function(){
       feedControllerSeamed = proxyquire("../controllers/feed",{"express-validator":{
         validationResult:()=>{
@@ -165,11 +139,11 @@ describe("Controllers Feed",function(){
         }
       }});
     });
-    it("createPost - should throw error if there is validation errors",function(done){
-      chackingStatus(feedControllerSeamed.createPost({},{},()=>{}),done);
+    it("createPost - should throw an error if there is validation errors",function(done){
+      shouldThrowError(feedControllerSeamed.createPost({},{},()=>{}),done,422,"Validation failed",true);
     });
-    it("editPost - should throw error if there is validation errors",function(done){
-      chackingStatus(feedControllerSeamed.editPost({},{},()=>{}),done);
+    it("editPost - should throw an error if there is validation errors",function(done){
+      shouldThrowError(feedControllerSeamed.editPost({},{},()=>{}),done,422,"Validation failed",true);
     });
   });
   describe("Controllers Feed - createPost and editPost", function(){
@@ -186,21 +160,9 @@ describe("Controllers Feed",function(){
       }}); 
     }); 
     describe("Controllers Feed - createPost", function(){
-      it("should throw an error if user not found",function(done){
+      it("should throw an error if the user is not found",function(done){
         req.userId = "9999aa99a9a99aa999a99a98";
-        feedControllerSeamed.createPost(req, {},()=>{})
-          .then(result=> {
-            expect(result)
-              .to.be.an("error")
-              .to.include({"message":"User not found","httpStatusCode":404});
-            done();
-          })
-          .catch(err => {
-            expect(err)
-              .to.be.an("error")
-              .to.include({"message":"User not found","httpStatusCode":404});
-            done();
-          });
+        shouldThrowError(feedControllerSeamed.createPost(req, {},()=>{}),done,404,"User not found");
       });
       it("should get the response with correctly defined data", function(done){
         feedControllerSeamed.createPost(req, res, ()=>{})
@@ -213,26 +175,21 @@ describe("Controllers Feed",function(){
           .catch(err => console.log(err));
       });
     });
-    describe("Controllers Feed - editPost", function(done){
-
+    describe("Controllers Feed - editPost", function(){
+      it("should throw an error if the post is not found",function(done){
+        req.params.postId = "8877aa99a9a99aa999a99a99";
+        shouldThrowError(feedControllerSeamed.editPost(req, {}, ()=>{}),done,404,"Post not found");
+      });
+      it("should throw an error if the user is not authorized",function(done){
+        req.userId = "8877aa99a9a99aa999a99a88";
+        shouldThrowError(feedControllerSeamed.editPost(req, {}, ()=>{}),done,403,"Forbidden");
+      });
     });
   });
   describe("Controllers Feed - getPost", function(){
-    it("should throw an error if the post not found",function(){
+    it("should throw an error if the post is not found",function(done){
       req.params.postId = "8877aa99a9a99aa999a99a99";
-      feedControllers.getPost(req, {}, ()=>{})
-        .then(result=> {
-          expect(result)
-            .to.be.an("error")
-            .to.include({"message":"Post not found","httpStatusCode":404});
-          done();
-        })
-        .catch(err => {
-          expect(err)
-            .to.be.an("error")
-            .to.include({"message":"Post not found","httpStatusCode":404});
-          done();
-        });
+      shouldThrowError(feedControllers.getPost(req, {}, ()=>{}),done,404,"Post not found");
     });
     it("should get the response with correctly defined data", function(done){
       feedControllers.getPost(req, res, ()=>{})

@@ -4,6 +4,7 @@
   "description": "",
   "main": "app.js",
   "scripts": {
+    "test-not-all": "mocha --timeout 10000 --grep",
     "test": "mocha --timeout 10000",
     "start": "nodemon app.js"
   },

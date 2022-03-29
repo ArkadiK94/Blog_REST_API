@@ -13,7 +13,7 @@ describe("Util Error",function(){
       }
     };
   });
-  it("should throw error",function(){
+  it("should throw an error",function(){
     let err = "xyz";
     expect(errorHandle.asyncError.bind(this,err,next)).to.throw();
     

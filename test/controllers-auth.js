@@ -9,6 +9,7 @@ const jwt = require("jsonwebtoken");
 
 const User = require("../model/user");
 const authController = require("../controllers/auth");
+const shouldThrowError = require("./throw-error");
 
 describe("Controllers Auth",function(){
   let req, res, user;
@@ -74,7 +75,7 @@ describe("Controllers Auth",function(){
         }
       }});    
     });
-    it("should throw error if the there is validation errors",function(done){
+    it("should throw an error if the there is validation errors",function(done){
       authControllerSeamed = proxyquire("../controllers/auth",{"express-validator":{
         validationResult:()=>{
           return {
@@ -87,37 +88,12 @@ describe("Controllers Auth",function(){
           };
         }
       }});
-      authControllerSeamed.postSignup({},{},()=>{})
-        .then(result=> {
-          expect(result)
-            .to.be.an("error")
-            .to.include({"message":"Validation failed","httpStatusCode":422})
-            .to.have.property("data");
-          done();
-        })
-        .catch(err => {
-          expect(err)
-            .to.be.an("error")
-            .to.include({"message":"Validation failed","httpStatusCode":422})
-            .to.have.property("data");
-          done();
-        });
+      shouldThrowError(authControllerSeamed.postSignup({},{},()=>{}),done,422,"Validation failed",true);
+      
     });
-    it("should throw error if this user already exist",function(done){
+    it("should throw an error if this user already exist",function(done){
       req.body.email = "test@test.com";
-      authControllerSeamed.postSignup(req,{},()=>{})
-        .then(result=> {
-          expect(result)
-            .to.be.an("error")
-            .to.include({"message":"This user is already exists","httpStatusCode":403})
-          done();
-        })
-        .catch(err => {
-          expect(err)
-            .to.be.an("error")
-            .to.include({"message":"This user is already exists","httpStatusCode":403})
-          done();
-        });
+      shouldThrowError(authControllerSeamed.postSignup(req,{},()=>{}),done,403,"This user is already exists");
     });
     it("should return the user and response data as expected",function(done){
       authControllerSeamed = proxyquire("../controllers/auth",{"bcryptjs":{
@@ -137,37 +113,13 @@ describe("Controllers Auth",function(){
     });
   });
   describe("Controllers Auth - postLogin", function(){
-    it("should throw error if there is not a matching user",function(done){
+    it("should throw an error if there is not a matching user",function(done){
       req.body.email = "error@error.com";
-      authController.postLogin(req,{},()=>{})
-        .then(result=>{
-          expect(result)
-            .to.be.an("error")
-            .to.include({"message":"User not found","httpStatusCode":404});
-          done();
-        })
-        .catch(err =>{
-          expect(err)
-            .to.be.an("error")
-            .to.include({"message":"User not found","httpStatusCode":404});
-          done();
-        });
+      shouldThrowError(authController.postLogin(req,{},()=>{}),done,404,"User not found");
     });
-    it("should throw error if the password is not valid",function(done){
+    it("should throw an error if the password is not valid",function(done){
       req.body.email = "test@test.com";
-      authController.postLogin(req,{},()=>{})
-        .then(result=>{
-          expect(result)
-            .to.be.an("error")
-            .to.include({"message":"Pls, enter a valid password","httpStatusCode":401});
-          done();
-        })
-        .catch(err =>{
-          expect(err)
-            .to.be.an("error")
-            .to.include({"message":"Pls, enter a valid password","httpStatusCode":401});
-          done();
-        });
+      shouldThrowError(authController.postLogin(req,{},()=>{}),done,401,"Pls, enter a valid password");
     });
     it("should get the response with correctly defined data",function(done){
       req.body.email = "test@test.com";
@@ -190,21 +142,9 @@ describe("Controllers Auth",function(){
     });
   });
   describe("Controllers Auth - getStatus", function(){
-    it("should throw error if the user not found",function(done){
+    it("should throw an error if the user is not found",function(done){
       req.userId = "9999aa99a9a99aa999a99a00";
-      authController.getStatus(req,{},()=>{})
-        .then(result=>{
-          expect(result)
-            .to.be.an("error")
-            .to.include({"message":"User not found","httpStatusCode":404});
-          done();
-        })
-        .catch(err =>{
-          expect(err)
-            .to.be.an("error")
-            .to.include({"message":"User not found","httpStatusCode":404});
-          done();
-        });
+      shouldThrowError(authController.getStatus(req,{},()=>{}),done,404,"User not found");
     });
     it("should get the response with correctly defined data",function(done){
       authController.getStatus(req,res,()=>{})
@@ -219,21 +159,10 @@ describe("Controllers Auth",function(){
     });
   });
   describe("Controllers Auth - postStatus",function(){
-    it("should throw error if the user not found",function(done){
+    it("should throw an error if the user is not found",function(done){
       req.userId = "9999aa99a9a99aa999a99a00";
-      authController.postStatus(req,{},()=>{})
-        .then(result=>{
-          expect(result)
-            .to.be.an("error")
-            .to.include({"message":"User not found","httpStatusCode":404});
-          done();
-        })
-        .catch(err =>{
-          expect(err)
-            .to.be.an("error")
-            .to.include({"message":"User not found","httpStatusCode":404});
-          done();
-        });
+      shouldThrowError(authController.postStatus(req,{},()=>{}),done,404,"User not found");
+      
     });
     it("should get the response with correctly defined data ",function(done){
       authController.postStatus(req,res,()=>{})
