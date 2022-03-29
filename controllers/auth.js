@@ -82,8 +82,9 @@ exports.postStatus = async (req, res, next)=>{
       errorHandle.syncError("User not found", 404);
     }
     user.status = status;
-    await user.save();
+    const updatedUser = await user.save();
     res.status(200).json({message:"The status was updeted"});
+    return updatedUser; // for testing 
   }catch(err){
     errorHandle.asyncError(err, next);
   }
