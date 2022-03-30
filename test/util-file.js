@@ -8,7 +8,7 @@ describe("Util File",function(){
       deleteObject: ({Bucket, Key})=>{
         return {
           promise: ()=>{
-            return Promise.reject();
+            return Promise.reject("reject for testing");
           }
         };
       }

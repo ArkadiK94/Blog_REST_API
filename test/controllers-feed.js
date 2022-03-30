@@ -10,6 +10,7 @@ const Post = require("../model/post");
 const feedControllers = require("../controllers/feed");
 const io = require("../socket");
 const shouldThrowError = require("./throw-error");
+const fileHelper = require("../util/file"); 
 
 describe("Controllers Feed",function(){
   let req, res, user, post;
@@ -124,28 +125,6 @@ describe("Controllers Feed",function(){
         });
     });
   });
-  describe("Controllers Feed - Validation failed",function(){
-    before(function(){
-      feedControllerSeamed = proxyquire("../controllers/feed",{"express-validator":{
-        validationResult:()=>{
-          return {
-            isEmpty:()=>{
-              return false;
-            },
-            array:()=>{
-              return [];
-            }
-          };
-        }
-      }});
-    });
-    it("createPost - should throw an error if there is validation errors",function(done){
-      shouldThrowError(feedControllerSeamed.createPost({},{},()=>{}),done,422,"Validation failed",true);
-    });
-    it("editPost - should throw an error if there is validation errors",function(done){
-      shouldThrowError(feedControllerSeamed.editPost({},{},()=>{}),done,422,"Validation failed",true);
-    });
-  });
   describe("Controllers Feed - createPost and editPost", function(){
     let feedControllerSeamed;
     beforeEach(function(){
@@ -159,6 +138,28 @@ describe("Controllers Feed",function(){
         }
       }}); 
     }); 
+    describe("Controllers Feed - Validation failed",function(){
+      beforeEach(function(){
+        feedControllerSeamed = proxyquire("../controllers/feed",{"express-validator":{
+          validationResult:()=>{
+            return {
+              isEmpty:()=>{
+                return false;
+              },
+              array:()=>{
+                return [];
+              }
+            };
+          }
+        }});
+      });
+      it("createPost - should throw an error if there is validation errors",function(done){
+        shouldThrowError(feedControllerSeamed.createPost(req,{},()=>{}),done,422,"Validation failed",true);
+      });
+      it("editPost - should throw an error if there is validation errors",function(done){
+        shouldThrowError(feedControllerSeamed.editPost(req,{},()=>{}),done,422,"Validation failed",true);
+      });
+    });
     describe("Controllers Feed - createPost", function(){
       it("should throw an error if the user is not found",function(done){
         req.userId = "9999aa99a9a99aa999a99a98";
@@ -184,6 +185,26 @@ describe("Controllers Feed",function(){
         req.userId = "8877aa99a9a99aa999a99a88";
         shouldThrowError(feedControllerSeamed.editPost(req, {}, ()=>{}),done,403,"Forbidden");
       });
+      it("should call deleteFile if new img was uploaded", function(done){
+        sinon.stub(fileHelper,"deleteFile");
+        fileHelper.deleteFile.returns(true);
+        feedControllerSeamed.editPost(req, res, ()=>{})
+          .then(()=>{
+            expect(fileHelper.deleteFile.called).to.be.true;
+            fileHelper.deleteFile.restore();
+            done();
+          })
+          .catch(err=>console.log(err));
+      });
+      it("should get the response with correctly defined data", function(done){
+        feedControllerSeamed.editPost(req, res, ()=>{})
+          .then((updatedPost)=>{
+            expect(res).to.include({"statusCode":200,"message":"The post was updated","post":updatedPost});
+            expect(updatedPost).to.include({"title":req.body.title,"content": req.body.content, "imageUrl": req.file.location});
+            done();
+          })  
+          .catch(err => console.log(err));
+      });
     });
   });
   describe("Controllers Feed - getPost", function(){
@@ -201,6 +222,81 @@ describe("Controllers Feed",function(){
           console.log(err);
         });
     });
+  });
+  describe("Controllers Feed - deletePost",function(){
+    it("should throw an error if the post is not found",function(done){
+      req.params.postId = "8877aa99a9a99aa999a99a99";
+      shouldThrowError(feedControllers.deletePost(req, {}, ()=>{}),done,404,"Post not found");
+    });
+    it("should throw an error if the user is not authorized",function(done){
+      req.userId = "8877aa99a9a99aa999a99a88";
+      shouldThrowError(feedControllers.deletePost(req, {}, ()=>{}),done,403,"Forbidden");
+    });
+    describe("Controllers Feed - deletePost , the post was removed",function(){
+      let postToDelete;
+      beforeEach(function(done){
+        postToDelete = new Post({
+          title: "post test delete",
+          imageUrl: "/someUrl/post",
+          content: "some content for testing",
+          creator: user._id,
+          _id: "5555e8eee8e88888ee8ee8e8"
+        });
+        postToDelete.save()
+          .then(createdPost=>{
+            user.posts.push(createdPost);
+            return user.save();
+          })
+          .then(()=>{
+            req.userId = user._id;
+            req.params.postId = postToDelete._id;
+            done()
+          })
+          .catch(err=>{console.log(err)});
+      });
+      it("should call deleteFile if the post has img", function(done){
+        req.imageUrl = "./testing/";
+        sinon.stub(fileHelper,"deleteFile");
+        fileHelper.deleteFile.returns(true);
+        feedControllers.deletePost(req, res, ()=>{})
+          .then(()=>{
+            expect(fileHelper.deleteFile.called).to.be.true;
+            fileHelper.deleteFile.restore();
+            done();
+          })
+          .catch(err=>console.log(err));
+      });
+      it("should not find the deleted post in the db", function(done){
+        feedControllers.deletePost(req, res, ()=>{})
+          .then(({deletedPost})=>{
+            expect(deletedPost._id.toString()).to.be.equal(req.params.postId.toString());
+            return Post.findById(deletedPost._id);
+          })  
+          .then(removedPost=>{
+            expect(removedPost).to.be.null;
+            done();
+          })
+          .catch(err => console.log(err));
+      });
+      it("should not find the deleted post ref in the user model", function(done){
+        feedControllers.deletePost(req, res, ()=>{})
+          .then(({deletedPost,updatedUser})=>{
+            expect(updatedUser._id.toString()).to.be.equal(req.userId.toString());
+            expect(updatedUser.posts).to.not.contain(deletedPost._id);
+            done();
+          })
+          .catch(err => console.log(err));
+      });
+      it("should get the response with correctly defined data", function(done){
+        feedControllers.deletePost(req, res, ()=>{})
+          .then(()=>{
+            expect(res).to.include({"statusCode":200,"message":"The post was deleted"});
+            done();
+          })  
+          .catch(err => console.log(err));
+      });
+    });
+    
   });
   after(function(done){
     User.deleteMany({})

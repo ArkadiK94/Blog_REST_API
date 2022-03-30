@@ -19,6 +19,8 @@ let shouldThrowError = (promise,done,statusCode=500,message="",dataProperty=fals
       done();
     })
     .catch(err => {
+      let errMessage = err.message||err;
+      console.log(errMessage);
       if(dataProperty){
         expect(err)
           .to.be.an("error")

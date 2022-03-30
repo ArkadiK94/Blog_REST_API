@@ -93,9 +93,10 @@ exports.editPost = async (req, res, next)=>{
       fileHelper.deleteFile(post.imageUrl, req.s3);
       post.imageUrl = imageUrl;
     }
-    await post.save();
+    const updatedPost = await post.save();
     io.getIo().emit("posts",{action:"edit"});
     res.status(200).json({message: "The post was updated", post:post});
+    return updatedPost; // for testing
   }catch(err){
     errorHandle.asyncError(err,next);
   }
@@ -114,12 +115,13 @@ exports.deletePost = async (req, res, next)=>{
     if(post.imageUrl){
       fileHelper.deleteFile(post.imageUrl,req.s3);
     }
-    await post.remove();
+    const deletedPost = await post.remove();
     const user = await User.findById(req.userId);
     user.posts.pull(postId);
-    await user.save();
+    const updatedUser = await user.save();
     io.getIo().emit("posts",{action:"delete", postId:postId});
     res.status(200).json({message: "The post was deleted"});
+    return {deletedPost,updatedUser};
   }catch(err){
     errorHandle.asyncError(err, next)
   }

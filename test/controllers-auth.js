@@ -88,7 +88,7 @@ describe("Controllers Auth",function(){
           };
         }
       }});
-      shouldThrowError(authControllerSeamed.postSignup({},{},()=>{}),done,422,"Validation failed",true);
+      shouldThrowError(authControllerSeamed.postSignup(res,{},()=>{}),done,422,"Validation failed",true);
       
     });
     it("should throw an error if this user already exist",function(done){
