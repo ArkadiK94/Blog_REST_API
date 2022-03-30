@@ -9,12 +9,14 @@ Technologies that we used:
 4. websocket protocol with socket.io
 5. mongoose - Object Data Modeling for mongoDB
 6. jsonwebtoken
+7. mochaJS , chaiJS, sinonJS and proxyquire - Testing  
 
 
 Important features from NodeJS and other used libraries:
 1. Handling Requsts & Respones with sending JSON DATA 
-2. Authentication with jwt
+2. Authentication with jsonwebtoken
 3. Handling Cross Origin Resource Sharing Errors
+4. Testing the app
 
 
 * Using the server with Blog app which was build with ReactJS (the frontend was not added to github)
