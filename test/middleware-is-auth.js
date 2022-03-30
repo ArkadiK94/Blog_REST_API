@@ -2,19 +2,11 @@ const expect = require("chai").expect;
 const jwt = require("jsonwebtoken");
 const sinon = require("sinon");
 
-const isAuth = require('../middleware/is-auth'); 
+const isAuth = require('../middleware/is-auth');
+const next = require("./util-test/next-func");
+ 
 
 describe("Middleware Is Auth",function(){
-  let next;
-  before(function(){
-    next = (error = false)=>{ // I only do unit testing for now so there is no use in next() functionality
-      if(error){
-        return false;
-      } else {
-        () =>{};
-      }
-    };
-  });
   it("should throw an error if no authorization header is present",function(){
     const req = {
       get: function(header){

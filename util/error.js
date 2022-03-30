@@ -11,12 +11,8 @@ const errorGeneral = (err,statusCode)=>{
 
 exports.asyncError = (err,next,statusCode=500) => {
   const newError = errorGeneral(err,statusCode);
-  if(!next(newError)){ // for testing cases
-    throw newError;
-  } else {
-    next(newError);
-    return newError; // for testing cases
-  }
+  next(newError);
+  return newError; // for testing cases
 }
 
 exports.syncError = (err,statusCode=500) => {

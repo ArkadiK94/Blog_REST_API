@@ -1,5 +1,5 @@
 const deleteFile = require("../util/file").deleteFile; 
-const shouldThrowError = require("./throw-error");
+const shouldThrowError = require("./util-test/throw-error");
 
 describe("Util File",function(){
   it("should throw an error if there is a problem to delete the file",function(done){

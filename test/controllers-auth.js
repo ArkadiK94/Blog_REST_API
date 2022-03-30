@@ -9,7 +9,8 @@ const jwt = require("jsonwebtoken");
 
 const User = require("../model/user");
 const authController = require("../controllers/auth");
-const shouldThrowError = require("./throw-error");
+const shouldThrowError = require("./util-test/throw-error");
+const next = require("./util-test/next-func");
 
 describe("Controllers Auth",function(){
   let req, res, user;
@@ -88,12 +89,12 @@ describe("Controllers Auth",function(){
           };
         }
       }});
-      shouldThrowError(authControllerSeamed.postSignup(res,{},()=>{}),done,422,"Validation failed",true);
+      shouldThrowError(authControllerSeamed.postSignup(res,{},next),done,422,"Validation failed",true);
       
     });
     it("should throw an error if this user already exist",function(done){
       req.body.email = "test@test.com";
-      shouldThrowError(authControllerSeamed.postSignup(req,{},()=>{}),done,403,"This user is already exists");
+      shouldThrowError(authControllerSeamed.postSignup(req,{},next),done,403,"This user is already exists");
     });
     it("should return the user and response data as expected",function(done){
       authControllerSeamed = proxyquire("../controllers/auth",{"bcryptjs":{
@@ -101,7 +102,7 @@ describe("Controllers Auth",function(){
           return req.body.password;
         }
       }});  
-      authControllerSeamed.postSignup(req,res,()=>{})
+      authControllerSeamed.postSignup(req,res,next)
         .then(result=> {
           expect(res).to.include({"statusCode":201,"message":"The User was created"});
           expect(result).to.include({"email":req.body.email,"password":req.body.password,"name":req.body.name});
@@ -115,11 +116,11 @@ describe("Controllers Auth",function(){
   describe("Controllers Auth - postLogin", function(){
     it("should throw an error if there is not a matching user",function(done){
       req.body.email = "error@error.com";
-      shouldThrowError(authController.postLogin(req,{},()=>{}),done,404,"User not found");
+      shouldThrowError(authController.postLogin(req,{},next),done,404,"User not found");
     });
     it("should throw an error if the password is not valid",function(done){
       req.body.email = "test@test.com";
-      shouldThrowError(authController.postLogin(req,{},()=>{}),done,401,"Pls, enter a valid password");
+      shouldThrowError(authController.postLogin(req,{},next),done,401,"Pls, enter a valid password");
     });
     it("should get the response with correctly defined data",function(done){
       req.body.email = "test@test.com";
@@ -127,7 +128,7 @@ describe("Controllers Auth",function(){
       bcrypt.compare.returns(true);
       sinon.stub(jwt,"sign");
       jwt.sign.returnsArg(0);
-      authController.postLogin(req,res,()=>{})
+      authController.postLogin(req,res,next)
         .then(()=>{
           expect(res)
             .to.include({"statusCode":200,"userId":user._id.toString()})
@@ -144,10 +145,10 @@ describe("Controllers Auth",function(){
   describe("Controllers Auth - getStatus", function(){
     it("should throw an error if the user is not found",function(done){
       req.userId = "9999aa99a9a99aa999a99a00";
-      shouldThrowError(authController.getStatus(req,{},()=>{}),done,404,"User not found");
+      shouldThrowError(authController.getStatus(req,{},next),done,404,"User not found");
     });
     it("should get the response with correctly defined data",function(done){
-      authController.getStatus(req,res,()=>{})
+      authController.getStatus(req,res,next)
         .then(()=>{
           expect(res)
             .to.include({"statusCode":200,"message":"The status was fetched","userStatus":user.status});
@@ -161,11 +162,11 @@ describe("Controllers Auth",function(){
   describe("Controllers Auth - postStatus",function(){
     it("should throw an error if the user is not found",function(done){
       req.userId = "9999aa99a9a99aa999a99a00";
-      shouldThrowError(authController.postStatus(req,{},()=>{}),done,404,"User not found");
+      shouldThrowError(authController.postStatus(req,{},next),done,404,"User not found");
       
     });
     it("should get the response with correctly defined data ",function(done){
-      authController.postStatus(req,res,()=>{})
+      authController.postStatus(req,res,next)
         .then((updatedUser)=>{
           expect(res)
             .to.include({"statusCode":200,"message":"The status was updeted"});

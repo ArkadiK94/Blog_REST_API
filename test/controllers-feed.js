@@ -9,8 +9,10 @@ const User = require("../model/user");
 const Post = require("../model/post"); 
 const feedControllers = require("../controllers/feed");
 const io = require("../socket");
-const shouldThrowError = require("./throw-error");
+const shouldThrowError = require("./util-test/throw-error");
 const fileHelper = require("../util/file"); 
+const next = require("./util-test/next-func");
+
 
 describe("Controllers Feed",function(){
   let req, res, user, post;
@@ -86,7 +88,7 @@ describe("Controllers Feed",function(){
   });
   describe("Controllers Feed - getPosts", function(){
     it("should throw an error in case there was one",function(done){
-      shouldThrowError(feedControllers.getPosts(req,{},()=>{}),done);
+      shouldThrowError(feedControllers.getPosts(req,{},next),done);
     });
     it("should get the response with correctly defined data",function(done){
       const post1 = new Post({
@@ -110,7 +112,7 @@ describe("Controllers Feed",function(){
         })
         .then(()=>{
           postsMade = [post2._id,post1._id];
-          feedControllers.getPosts(req,res,()=>{})  
+          feedControllers.getPosts(req,res,next)  
             .then(({posts,POSTS_PER_PAGE})=>{
               expect(res).to.include({"statusCode":200,"message":"All posts were fetched","totalItems":3});
               expect(posts.length).to.equal(POSTS_PER_PAGE);
@@ -154,19 +156,19 @@ describe("Controllers Feed",function(){
         }});
       });
       it("createPost - should throw an error if there is validation errors",function(done){
-        shouldThrowError(feedControllerSeamed.createPost(req,{},()=>{}),done,422,"Validation failed",true);
+        shouldThrowError(feedControllerSeamed.createPost(req,{},next),done,422,"Validation failed",true);
       });
       it("editPost - should throw an error if there is validation errors",function(done){
-        shouldThrowError(feedControllerSeamed.editPost(req,{},()=>{}),done,422,"Validation failed",true);
+        shouldThrowError(feedControllerSeamed.editPost(req,{},next),done,422,"Validation failed",true);
       });
     });
     describe("Controllers Feed - createPost", function(){
       it("should throw an error if the user is not found",function(done){
         req.userId = "9999aa99a9a99aa999a99a98";
-        shouldThrowError(feedControllerSeamed.createPost(req, {},()=>{}),done,404,"User not found");
+        shouldThrowError(feedControllerSeamed.createPost(req, {},next),done,404,"User not found");
       });
       it("should get the response with correctly defined data", function(done){
-        feedControllerSeamed.createPost(req, res, ()=>{})
+        feedControllerSeamed.createPost(req, res, next)
           .then(({savedPost,updatedUser})=>{
             expect(res).to.include({"statusCode":201,"message":"New post was created","post":savedPost});
             expect(savedPost).to.include({"title":req.body.title,"content": req.body.content, "imageUrl": req.file.location, "creator":updatedUser});
@@ -179,16 +181,16 @@ describe("Controllers Feed",function(){
     describe("Controllers Feed - editPost", function(){
       it("should throw an error if the post is not found",function(done){
         req.params.postId = "8877aa99a9a99aa999a99a99";
-        shouldThrowError(feedControllerSeamed.editPost(req, {}, ()=>{}),done,404,"Post not found");
+        shouldThrowError(feedControllerSeamed.editPost(req, {}, next),done,404,"Post not found");
       });
       it("should throw an error if the user is not authorized",function(done){
         req.userId = "8877aa99a9a99aa999a99a88";
-        shouldThrowError(feedControllerSeamed.editPost(req, {}, ()=>{}),done,403,"Forbidden");
+        shouldThrowError(feedControllerSeamed.editPost(req, {}, next),done,403,"Forbidden");
       });
       it("should call deleteFile if new img was uploaded", function(done){
         sinon.stub(fileHelper,"deleteFile");
         fileHelper.deleteFile.returns(true);
-        feedControllerSeamed.editPost(req, res, ()=>{})
+        feedControllerSeamed.editPost(req, res, next)
           .then(()=>{
             expect(fileHelper.deleteFile.called).to.be.true;
             fileHelper.deleteFile.restore();
@@ -197,7 +199,7 @@ describe("Controllers Feed",function(){
           .catch(err=>console.log(err));
       });
       it("should get the response with correctly defined data", function(done){
-        feedControllerSeamed.editPost(req, res, ()=>{})
+        feedControllerSeamed.editPost(req, res, next)
           .then((updatedPost)=>{
             expect(res).to.include({"statusCode":200,"message":"The post was updated","post":updatedPost});
             expect(updatedPost).to.include({"title":req.body.title,"content": req.body.content, "imageUrl": req.file.location});
@@ -210,10 +212,10 @@ describe("Controllers Feed",function(){
   describe("Controllers Feed - getPost", function(){
     it("should throw an error if the post is not found",function(done){
       req.params.postId = "8877aa99a9a99aa999a99a99";
-      shouldThrowError(feedControllers.getPost(req, {}, ()=>{}),done,404,"Post not found");
+      shouldThrowError(feedControllers.getPost(req, {}, next),done,404,"Post not found");
     });
     it("should get the response with correctly defined data", function(done){
-      feedControllers.getPost(req, res, ()=>{})
+      feedControllers.getPost(req, res, next)
         .then(post=>{
           expect(res).to.include({"statusCode":200,"message":"The post was fetched","post":post});
           done();
@@ -226,11 +228,11 @@ describe("Controllers Feed",function(){
   describe("Controllers Feed - deletePost",function(){
     it("should throw an error if the post is not found",function(done){
       req.params.postId = "8877aa99a9a99aa999a99a99";
-      shouldThrowError(feedControllers.deletePost(req, {}, ()=>{}),done,404,"Post not found");
+      shouldThrowError(feedControllers.deletePost(req, {}, next),done,404,"Post not found");
     });
     it("should throw an error if the user is not authorized",function(done){
       req.userId = "8877aa99a9a99aa999a99a88";
-      shouldThrowError(feedControllers.deletePost(req, {}, ()=>{}),done,403,"Forbidden");
+      shouldThrowError(feedControllers.deletePost(req, {}, next),done,403,"Forbidden");
     });
     describe("Controllers Feed - deletePost , the post was removed",function(){
       let postToDelete;
@@ -258,7 +260,7 @@ describe("Controllers Feed",function(){
         req.imageUrl = "./testing/";
         sinon.stub(fileHelper,"deleteFile");
         fileHelper.deleteFile.returns(true);
-        feedControllers.deletePost(req, res, ()=>{})
+        feedControllers.deletePost(req, res, next)
           .then(()=>{
             expect(fileHelper.deleteFile.called).to.be.true;
             fileHelper.deleteFile.restore();
@@ -267,7 +269,7 @@ describe("Controllers Feed",function(){
           .catch(err=>console.log(err));
       });
       it("should not find the deleted post in the db", function(done){
-        feedControllers.deletePost(req, res, ()=>{})
+        feedControllers.deletePost(req, res, next)
           .then(({deletedPost})=>{
             expect(deletedPost._id.toString()).to.be.equal(req.params.postId.toString());
             return Post.findById(deletedPost._id);
@@ -279,7 +281,7 @@ describe("Controllers Feed",function(){
           .catch(err => console.log(err));
       });
       it("should not find the deleted post ref in the user model", function(done){
-        feedControllers.deletePost(req, res, ()=>{})
+        feedControllers.deletePost(req, res, next)
           .then(({deletedPost,updatedUser})=>{
             expect(updatedUser._id.toString()).to.be.equal(req.userId.toString());
             expect(updatedUser.posts).to.not.contain(deletedPost._id);
@@ -288,7 +290,7 @@ describe("Controllers Feed",function(){
           .catch(err => console.log(err));
       });
       it("should get the response with correctly defined data", function(done){
-        feedControllers.deletePost(req, res, ()=>{})
+        feedControllers.deletePost(req, res, next)
           .then(()=>{
             expect(res).to.include({"statusCode":200,"message":"The post was deleted"});
             done();
